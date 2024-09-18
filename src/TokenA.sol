@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract TokenA is ERC20 {
-    address public owner;
-
-    constructor() ERC20("TokenA", "TKA") {
-        owner = msg.sender;
-        _mint(msg.sender, 1_000_000_000 * 10 ** decimals()); // Mint 1 billion TokenA
+contract TokenA is ERC20, Ownable {
+    constructor() ERC20("TokenA", "TKA") Ownable(msg.sender) {
+        // Ownable's constructor is automatically called with msg.sender as the owner
     }
 
-    function mint(address to, uint256 amount) external {
-        require(msg.sender == owner, "Only owner can mint tokens");
+    function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
 }
