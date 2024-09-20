@@ -2,55 +2,52 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
-import "forge-std/console.sol";
-
-// 与 TokenA 和 TokenSwap 合约交互的接口
-interface ITokenA {
-    function balanceOf(address account) external view returns (uint256);
-}
-
-interface ITokenSwap {
-    function tokenA() external view returns (address);
-}
+import "../src/TokenSwap.sol"; // Assuming your TokenSwap.sol is in the src directory
+import "../src/TokenA.sol"; // Assuming your TokenA.sol is in the src directory
 
 contract CheckBalances is Script {
+    TokenA tokenA;
+    TokenSwap tokenSwap;
+    
+    address owner = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266); // Anvil 1
+    address user = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8); // Anvil 2
+
     function run() external {
-        // 定义地址（使用正确的 checksum 地址）
-        address firstAccount = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266; // 替换为Anvil 1账户地址
-        address tokenSwapAddress = 0x132F7D9033b28B08cbc520e1cfD83c6dA3abfA36; // 替换为 TokenSwap 合约地址
+        console.log("Owner ETH balance:", owner.balance);
+        console.log("User ETH balance:", address(user).balance); // Replace with actual user address
+    
+        vm.startBroadcast(owner); // Start broadcasting as the owner
 
-        // 开始广播交易
-        vm.startBroadcast();
+        // Deploy TokenA and TokenSwap contracts
+        tokenA = new TokenA(owner);
+        tokenSwap = new TokenSwap(tokenA);
 
-        // 读取第一个账户的余额
-        //uint256 firstAccountBalance = vm.balance(firstAccount);
-        uint256 firstAccountBalance = address(firstAccount).balance;
-        console.log("First Account Balance: %s ETH", firstAccountBalance / 1 ether);
+        // Mint tokens for the owner and approve them for use by TokenSwap
+        tokenA.mint(owner, 1000 * 10 ** 18);
+        tokenA.approve(address(tokenSwap), 1000 * 10 ** 18);
+        tokenSwap.depositTokenA(1000 * 10 ** 18);
 
-        // 结束广播交易
-        vm.stopBroadcast();
+        // Display the token balances
+        uint256 ownerTokenBalance = tokenA.balanceOf(owner);
+        uint256 userTokenBalance = tokenA.balanceOf(user);
+        uint256 tokenSwapTokenBalance = tokenA.balanceOf(address(tokenSwap));
+        
+        console.log("Owner TokenA balance: ", ownerTokenBalance);
+        console.log("User TokenA balance: ", userTokenBalance);
+        console.log("TokenSwap TokenA balance: ", tokenSwapTokenBalance);
 
-        // 创建 TokenSwap 合约实例
-        ITokenSwap tokenSwap = ITokenSwap(tokenSwapAddress);
+        tokenSwap.swapETHForTokenA{value: 5 ether}();
 
-        // 检查 tokenA 方法是否返回有效地址
-        address tokenAAddress = tokenSwap.tokenA();
-        if (tokenAAddress == address(0)) {
-            console.log("Erorr: TokenA address is zero. Please check the TokenSwap contract.");
-            return;
-        }
+        // Display the Ether balances
+        uint256 ownerEthBalance = owner.balance;
+        uint256 userEthBalance = user.balance;
+        uint256 tokenSwapEthBalance = address(tokenSwap).balance;
+        
+        console.log("Owner ETH balance: ", ownerEthBalance);
+        console.log("Owner TokenA balance: ", tokenA.balanceOf(owner));
+        console.log("User ETH balance: ", userEthBalance);
+        console.log("TokenSwap ETH balance: ", tokenSwapEthBalance);
 
-        console.log("TokenA contract address : %s", tokenAAddress);
-
-        // 创建 TokenA 合约实例
-        ITokenA tokenA = ITokenA(tokenAAddress);
-
-        // 获取 TokenA 合约的余额
-        uint256 tokenAContractBalance = tokenA.balanceOf(tokenSwapAddress);
-        console.log("TokenA Contract Balance: %s TokenA", tokenAContractBalance);
-
-        // 获取第一个账户的 TokenA 余额
-        uint256 firstAccountTokenABalance = tokenA.balanceOf(firstAccount);
-        console.log("First Anvil Account TokenA Balance: %s TokenA", firstAccountTokenABalance);
+        vm.stopBroadcast(); // Stop broadcasting
     }
 }

@@ -12,30 +12,27 @@ contract TokenSwapTest is Test {
     address owner = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266); // Anvil 1, EOA External Owned Account
     address user = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8); // Anvil 2, EOA External Owned Account
     
-    function setUp() public {
-        // Deploy TokenA and TokenSwap contracts
-        tokenA = new TokenA();
-        tokenSwap = new TokenSwap(tokenA);
+function setUp() public {
+    // Start prank as the owner to mint tokens and deposit
+    vm.startPrank(owner);
 
-        // Get the contract's owner
-        address contractOwner = address(tokenA.owner());
+    // Deploy TokenA with the owner address
+    tokenA = new TokenA(owner); 
+    tokenSwap = new TokenSwap(tokenA);
 
-        // Use vm.startPrank with the contract owner
-        vm.startPrank(contractOwner);
+    // Mint tokens for the owner
+    tokenA.mint(owner, 1000 * 10 ** 18);
 
-        // Mint tokens for owner
-        tokenA.mint(contractOwner, 1000 * 10 ** 18); // Mint tokens for owner
-        tokenA.approve(address(tokenSwap), 1000 * 10 ** 18); // Approve TokenSwap to spend owner's tokens
-        tokenSwap.depositTokenA(1000 * 10 ** 18); // Deposit 1000 TokenA into the swap contract
+    // Approve TokenSwap to spend owner's tokens
+    tokenA.approve(address(tokenSwap), 1000 * 10 ** 18);
 
-        vm.stopPrank();
+    // Deposit tokens into the TokenSwap contract
+    tokenSwap.depositTokenA(1000 * 10 ** 18);
 
-        // Assume TokenA is pre-funded or deposited tokens manually
-        // Simulate a deposit of 1000 TokenA to TokenSwap
-        // vm.startPrank(owner);
-        // tokenA.transfer(address(tokenSwap), 1000 * 10 ** 18); // Transfer 1000 TokenA to TokenSwap
-        // vm.stopPrank();        
-    }
+    // Stop prank as the owner
+    vm.stopPrank();
+}
+
 
     function testSwapETHForTokenA() public payable {
         // Arrange

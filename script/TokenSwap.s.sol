@@ -20,7 +20,7 @@ contract TokenSwapScript is Script {
         vm.setNonce(deployer, fixedNonce);   
 
         // 部署 TokenA 合约
-        TokenA tokenA = new TokenA();
+        TokenA tokenA = new TokenA(deployer);
         console.log("TokenA Contract Address: %s", address(tokenA));
 
         // 部署 TokenSwap 合约，传入 TokenA 合约地址
